@@ -13,18 +13,16 @@ RUN apt-get update && apt-get install -y \
 # --- Étape 3 : Définir le dossier de travail ---
 WORKDIR /app
 
-# --- Étape 4 : Copier uniquement les fichiers nécessaires ---
-COPY Code/requirements.txt ./requirements.txt
-
-# --- Étape 5 : Installer les dépendances ---
+# --- Étape 4 : Copier et installer les dépendances ---
+COPY requirements.txt .
 RUN python -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# --- Étape 6 : Copier le reste du code ---
+# --- Étape 5 : Copier le reste du code ---
 COPY Code/ .
 
-# --- Étape 7 : Exposer le port 8080 ---
+# --- Étape 6 : Exposer le port ---
 EXPOSE 8080
 
-# --- Étape 8 : Lancer l’application Flask avec Gunicorn ---
+# --- Étape 7 : Lancer l’application ---
 CMD ["gunicorn", "-b", "0.0.0.0:8080", "app:app"]
