@@ -20,12 +20,14 @@ COPY requirements.txt .
 RUN python -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# --- Étape 6 : Copier le reste du code du projet ---
-COPY Code/ ./Code
+# --- Étape 6 : Forcer une vérification de Code/ ---
+RUN mkdir -p /tmp/cache_bust
 
-# --- Étape 7 : Exposer le port ---
+# --- Étape 7 : Copier le code du backend ---
+COPY ./Code /app/Code
+
+# --- Étape 8 : Exposer le port ---
 EXPOSE 8080
 
-# --- Étape 8 : Lancer l’application ---
-# Note : le chemin du module Flask doit correspondre à ton app.py dans Code/
+# --- Étape 9 : Lancer l’application ---
 CMD ["gunicorn", "-b", "0.0.0.0:8080", "Code.app:app"]
