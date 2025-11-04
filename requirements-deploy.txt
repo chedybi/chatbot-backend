@@ -7,4 +7,3 @@ gunicorn==23.0.0
 pymongo==4.15.1
 requests==2.32.5
 regex==2025.9.1
-gunicorn==23.0.0
