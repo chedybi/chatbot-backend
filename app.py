@@ -529,7 +529,9 @@ def programme_by_date(date_str):
 def handle_exception(e):
     return jsonify({"error": str(e)}), 500
 
-
+@app.route("/ping")
+def ping():
+    return "pong", 200
 
 if __name__ == "__main__":
     import os
