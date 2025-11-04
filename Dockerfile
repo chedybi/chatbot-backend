@@ -14,11 +14,11 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # --- Étape 4 : Copier les fichiers de dépendances ---
-COPY requirements.txt .
+COPY requirements-deploy.txt .
 
 # --- Étape 5 : Installer les dépendances Python ---
 RUN python -m pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements-deploy.txt
 
 # --- Étape 6 : Forcer une vérification de Code/ ---
 RUN mkdir -p /tmp/cache_bust
