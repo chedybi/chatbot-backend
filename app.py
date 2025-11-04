@@ -16,13 +16,13 @@ import os
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 from datetime import datetime
 from dotenv import load_dotenv # type: ignore
-from faq_retrieval import traiter_question
-from chatbot_story import generer_storytelling , normalize_story, intro_narrative_programme, anecdote_aleatoire , format_events
-from audio_handler import text_to_speech
-from model_intents import predict_intent
-from nlp_engine import traiter_question_utilisateur
-from questions import get_bot_response  
-from logic.programmes import (
+from Code.faq_retrieval import traiter_question
+from Code.chatbot_story import generer_storytelling , normalize_story, intro_narrative_programme, anecdote_aleatoire , format_events
+from Code.audio_handler import text_to_speech
+from Code.model_intents import predict_intent
+from Code.nlp_engine import traiter_question_utilisateur
+from Code.questions import get_bot_response  
+from Code.logic.programmes import (
     get_programme_date_range_detailed,
     get_event_locations_detailed,
     get_programme_enfant_general_detailed,
