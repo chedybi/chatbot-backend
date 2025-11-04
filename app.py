@@ -1,3 +1,5 @@
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from flask import Flask, request, jsonify, session # type: ignore
 from flask_session import Session # type: ignore
 from flask_cors import CORS # type: ignore
