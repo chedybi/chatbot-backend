@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from flask import Flask, request, jsonify, session # type: ignore
 from flask_session import Session # type: ignore
 from flask_cors import CORS # type: ignore
@@ -10,7 +13,6 @@ import difflib
 import random
 import base64
 import tempfile 
-import os
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 from datetime import datetime
 from dotenv import load_dotenv # type: ignore
