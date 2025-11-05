@@ -30,5 +30,5 @@ COPY ./Code /app/Code
 EXPOSE 8080
 
 # --- Étape 9 : Lancer l’application ---
-ENV PYTHONPATH="${PYTHONPATH}:/app/Code"   
+ENV PYTHONPATH="${PYTHONPATH}:/app/Code"
 CMD ["gunicorn", "-b", "0.0.0.0:8080", "Code.app:app"]
