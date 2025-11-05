@@ -1,5 +1,5 @@
 # --- Flask core ---
-Flask==3.1.2
+Flask==3.1.0
 Flask-Cors==6.0.1
 Flask-Bcrypt==1.0.1
 Flask-Session==0.8.0
@@ -16,17 +16,18 @@ SpeechRecognition==3.14.3
 
 # --- Machine Learning / NLP ---
 tensorflow==2.16.2
-torch==2.8.0
-scikit-learn==1.7.2
+torch==2.5.1
+scikit-learn==1.5.2
 sentence-transformers==5.1.0
 nltk==3.9.1
-transformers==4.56.1
+transformers==4.50.3
+textblob==0.19.0
 numpy==1.26.4
-joblib==1.5.2
+joblib==1.4.2
 
 # --- Database ---
-pymongo==4.15.1
+pymongo==4.13.2
 
 # --- Utils ---
-requests==2.32.5
-regex==2025.9.1
+requests==2.32.3
+regex==2024.11.6
