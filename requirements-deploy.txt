@@ -1,9 +1,26 @@
-Flask==3.1.2
+# === Core Flask server ===
+Flask==3.1.0
 Flask-Cors==6.0.1
 Flask-Bcrypt==1.0.1
 Flask-Session==0.8.0
-python-dotenv==1.1.1
 gunicorn==23.0.0
-pymongo==4.15.1
-requests==2.32.5
-regex==2025.9.1
+
+# === MongoDB ===
+pymongo==4.13.2
+
+# === Utilitaires ===
+python-dotenv==1.1.1
+requests==2.32.3
+regex==2024.11.6
+joblib==1.4.2
+
+# === NLP & Machine Learning ===
+sentence-transformers==5.1.0
+torch==2.5.1
+transformers==4.50.3
+numpy==1.26.4
+scikit-learn==1.5.2
+
+# === (Optionnel selon ton code, mais souvent utilisé dans ton chatbot) ===
+nltk==3.9.1
+textblob==0.19.0
