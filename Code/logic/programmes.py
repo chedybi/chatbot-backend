@@ -454,7 +454,7 @@ def get_programme_chat_friendly(intent, response_type="brief", max_lines=10, max
 # Export public
 # =========================================
 __all__ = [
-   "programmes_foire_2023", "programmes_enfant_2023", "get_programme_28_avril", "get_programme_07_mai",
+   "programmes_foire_2023", "programmes_enfant_2023", "get_programme_28_avril", "get_programme_04_mai", "get_programme_07_mai",
    "get_programme_duration_global", "get_programme_by_date_global", "get_programme_enfant_general_global",
    "get_all_programme_combined_dates_global", "get_foire_end_date_global", "get_foire_start_date_global",
    "get_programme_date_range", "get_event_locations_global", "get_event_hours_global", "get_event_price_global",    "get_editors_count_global","get_event_locations_detailed", "get_event_hours_detailed", "get_programme_enfant_general_detailed", 
