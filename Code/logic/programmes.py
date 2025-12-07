@@ -356,6 +356,33 @@ def get_programme_28_avril():
         "sessions": programme_28_avril
     }
 
+
+programme_04_mai =[
+    
+ {"titre" : "Journée Culturelle Vénézuélienne ", "heure" :"11:00 à 13:00", "directeur" : "Ridha Kochtbane", "salle" : "Convention du Ministère de la Culture", "Accés" : "Ouvert au public "},
+ {"titre" : "Interview avec Le Romancier Jalel Berjes (Jordanie) " , "heure" :"11:00 à 12:30", "directeur" : " Jamel Jlassi", "salle": " Salle de Babel", "Accés" : "Ouvert au public "},
+ {"titre" : "Le Lien entre la Philosophie et la Démocratie", "heure" : "11:00 à 13:00", "directeur" : "Fathi Triki", "salle" : "Dejla et Forat", "Accés" : "Resevée pour les invités "},
+ {"titre" : "Interview avec L'écrivaine Française Belinda Cannone", "heure" :"13:00 à 14:30", "directeur" : "Aymen Hssan", "salle" : "Salle de Babel", "Accés": "Ouvert au public "},   
+ {"titre" : "La Poésie orienté vers L'enfance et Les attentes de L'enfant (en Partenariat avec Les Ministères des Famille , Femme , Enfance et Agé)", "heure" : "15:00 à 16:30", "directeur" : "Lotfi Ben Miled", "salle" : "Salle de Babel", "Accés": "Resevée pour les invités "},   
+ {"titre" : "L'Ecriture et les Choques", "heure" : "15:00 à 16:30", "directeur" : "Mohammed Elhedi Jouili", "salle" : "Dejla et Forat", "Accés": "Resevée pour les invités "},  
+ {"titre" : "Livres des Villes", "heure" : "14:00 à 16:00", "directeur" : "Hbib Ben Salha", "salle" : "Convention du Ministère de la Culture", "Accés": "Ouvert au public "},  
+ {"titre" : "Les Communiqués d'Institution Supérieure pour la Musique (en partenariat avec L'institution)", "heure" : "", "directeur" : "L'Institution Supérieure pour la Musique", "salle" : "Convention du Ministère de la Culture", "Accés": "Ouvert au public "},  
+ {"titre" : "Interview avec L'Ecrivain 'Awadh Shaher' (Invité Spéciale du Royaume Arabi Saoudite) sur son tout Noveau Œuvre 'Conte du Desert'", "heure" : "17:00 à 18:30", "directeur" : "Omar Hfayedh", "salle" : "Salle de Baghdad", "Accés": "Ouvert au public "},
+ {"titre" : "Ecritures de La Bourterie", "heure" : "17:00 à 18:30", "directeur" : "Rajaa el Fariq", "salle" : "Dejla et Forat", "Accés": "Resevée pour les invités "}, 
+]
+
+def get_programme_04_mai():
+    """
+    Retourne un dict contenant :
+    - la date de commencement
+    - la liste complète des sessions pour le 04 mai
+    """
+    return {
+        "date": "04 Mai 2023",
+        "sessions": programme_04_mai
+    }
+
+
 programme_07_mai =[
     
  {"titre" : "Journée Culturelle Italienne", "heure" :"11:00 - 13:00", "directeur" : "Ridha Kochtbane", "salle" : "Salle de Convention de la Ministere de Culture", "Accés" : "Resevée pour les invités "},
