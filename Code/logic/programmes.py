@@ -3,6 +3,80 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 import locale
+from deep_translator import GoogleTranslator
+
+
+# =========================================
+# 🌍 TRADUCTION AUTOMATIQUE
+# =========================================
+
+SUPPORTED_LANGS = ["fr", "en", "de", "ar", "ja", "zh"]
+
+
+_TRANSLATORS = {}
+
+def get_translator(lang):
+    if lang not in _TRANSLATORS:
+        _TRANSLATORS[lang] = GoogleTranslator(source="fr", target=lang)
+    return _TRANSLATORS[lang]
+
+
+SAFE_KEYS = {"date", "heure"}
+
+LABELS = {
+    "👶 Enfants": {
+        "en": "👶 Children",
+        "de": "👶 Kinder",
+        "ar": "👶 أطفال",
+        "ja": "👶 子供向け",
+        "zh": "👶 儿童"
+    },
+    "🧑‍🦰 Tous publics": {
+        "en": "🧑‍🦰 All audiences",
+        "de": "🧑‍🦰 Für alle",
+        "ar": "🧑‍🦰 لجميع الفئات",
+        "ja": "🧑‍🦰 全年齢対象",
+        "zh": "🧑‍🦰 适合所有人"
+    }
+}
+
+
+
+def translate_any(value, lang="fr"):
+    if lang == "fr" or lang not in SUPPORTED_LANGS:
+        return value
+
+    try:
+        translator = get_translator(lang)
+
+        # 🔹 Cas STRING
+        if isinstance(value, str):
+            # 1️⃣ Traduction manuelle prioritaire (LABELS)
+            if value in LABELS and lang in LABELS[value]:
+                return LABELS[value][lang]
+
+            # 2️⃣ Traduction automatique
+            return translator.translate(value)
+
+        # 🔹 Cas LISTE
+        if isinstance(value, list):
+            return [translate_any(v, lang) for v in value]
+
+        # 🔹 Cas DICT
+        if isinstance(value, dict):
+            return {
+                k: (
+                    v if k in SAFE_KEYS
+                    else translate_any(v, lang)
+                )
+                for k, v in value.items()
+            }
+
+
+        return value
+    except Exception as e:
+        print(f"[WARN] Erreur traduction ({lang}) : {e}")
+        return value
 
 # 🌍 Locale française
 try:
@@ -38,6 +112,9 @@ def parser_date(date_str):
 # 🔌 Connexion MongoDB
 load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
+if not MONGO_URI:
+    raise RuntimeError("❌ MONGO_URI non défini")
+
 client = MongoClient(MONGO_URI)
 db = client["chatbotEvent"]
 programmes_foire_2023 = db["programmes_foire_2023"]
@@ -46,7 +123,7 @@ programmes_enfant_2023 = db["programmes_enfant_2023"]
 # =========================================
 # --- Réponses BRÈVES
 # =========================================
-def get_programme_duration_global():
+def get_programme_duration_global(lang="fr"):
     dates_foire = programmes_foire_2023.distinct("date")
     dates_enfant = programmes_enfant_2023.distinct("date")
     all_dates = list(set(dates_foire + dates_enfant))
@@ -57,11 +134,12 @@ def get_programme_duration_global():
         dates_dt.sort()
         debut = dates_dt[0].strftime("%d %B")
         fin = dates_dt[-1].strftime("%d %B")
-        return f"📅 Le programme global se déroulera du {debut} au {fin}."
+        result =  f"📅 Le programme global se déroulera du {debut} au {fin}."
     except Exception as e:
         return str(e)
+    return translate_any(result, lang)
 
-def get_programme_by_date_global(date_str):
+def get_programme_by_date_global(date_str, lang="fr"):
     events_foire = list(programmes_foire_2023.find({"date": date_str}))
     events_enfant = list(programmes_enfant_2023.find({"date": date_str}))
     total_events = events_foire + events_enfant
@@ -74,8 +152,10 @@ def get_programme_by_date_global(date_str):
         salle = e.get("salle", "Lieu inconnu")
         public = "👶 Enfants" if e in events_enfant else "🧑‍🦰 Tous publics"
         lines.append(f"- {public} – {titre} — {heure} dans {salle}")
-    return f"📅 Événements du {date_str} :\n" + "\n".join(lines)
-def get_event_price_global(event_name=None):
+    result = f"📅 Événements du {date_str} :\n" + "\n".join(lines)
+    return translate_any(result, lang)
+
+def get_event_price_global(event_name=None, lang="fr"):
     """
     Retourne le prix d'entrée pour un événement donné (version brève).
     Si aucun événement spécifique n'est fourni, on retourne le prix général.
@@ -95,17 +175,18 @@ def get_event_price_global(event_name=None):
             return "Le prix de l'atelier est de 15 TND."
     
     # Par défaut → prix généraux
-    return f"Les prix sont : Adulte {prix_generaux['adulte']}, Enfant {prix_generaux['enfant']}, Étudiant {prix_generaux['etudiant']}."
+    result = f"Les prix sont : Adulte {prix_generaux['adulte']}, Enfant {prix_generaux['enfant']}, Étudiant {prix_generaux['etudiant']}."
+    return translate_any(result, lang)
 
-
-def get_programme_enfant_general_global():
+def get_programme_enfant_general_global(lang="fr"):
     events = list(programmes_enfant_2023.find())
     if not events:
         return "Aucun événement pour enfants trouvé."
     titres = [e.get("titre", "Événement sans titre").strip() for e in events]
-    return "🎠 Activités enfants prévues :\n- " + "\n- ".join(sorted(set(titres)))
+    result = "🎠 Activités enfants prévues :\n- " + "\n- ".join(sorted(set(titres)))
+    return translate_any(result, lang)
 
-def get_all_programme_combined_dates_global():
+def get_all_programme_combined_dates_global(lang="fr"):
     dates_foire = programmes_foire_2023.distinct("date")
     dates_enfant = programmes_enfant_2023.distinct("date")
     all_dates = list(set(dates_foire + dates_enfant))
@@ -115,39 +196,52 @@ def get_all_programme_combined_dates_global():
         dates_dt = [parser_date(d) for d in all_dates]
         dates_dt.sort()
         dates_str = [d.strftime("%d %B %Y") for d in dates_dt]
-        return "📅 Dates couvertes par les programmes :\n- " + "\n- ".join(dates_str)
+        result = "📅 Dates couvertes par les programmes :\n- " + "\n- ".join(dates_str)
+        return translate_any(result, lang)
     except Exception as e:
-        return f"Erreur lors du tri des dates : {e}"
+        result = f"Erreur lors du tri des dates : {e}"
+        return translate_any(result, lang)
 
-def get_foire_start_date_global():
-    return "📅  le 28 Avril 2023."
+def get_foire_start_date_global(lang="fr"):
+     text = "📅  le 28 Avril 2023."
+     return translate_any(text, lang)
 
-def get_foire_end_date_global():
-    return "📅  le 07 Mai 2023."
+def get_foire_end_date_global(lang="fr"):
+    text = "📅  le 07 Mai 2023."
+    return translate_any(text, lang)
 
-def get_programme_date_range():
-    return "10 jours, commence le 28 Avril et termine le 07 Mai."
+def get_programme_date_range(lang="fr"):
+    text = "10 jours, commence le 28 Avril et termine le 07 Mai."
+    return translate_any(text, lang)
 
-def get_event_locations_global():
-    return ("Il y aura 4 stands différents pour accueillir les événements : "
-            "Salles de Baghdad, Babel, Dejla & Forat et Convention du Ministère de la Culture.")
+def get_event_locations_global(lang="fr"):
+    text = ("Il y aura 4 stands différents pour accueillir les événements : "
+    "Salles de Baghdad, Babel, Dejla & Forat et Convention du Ministère de la Culture.")
+    return translate_any(text, lang)
 
-def get_event_hours_global():
-    return "Chaque jour, les événements commencent à 9h du matin et se terminent à 18h."
+def get_event_hours_global(lang="fr"):
+    text = "Chaque jour, les événements commencent à 9h du matin et se terminent à 18h."
+    return translate_any(text, lang)
 
-def get_editors_count_global():
-    return "Plus de 200 éditeurs tunisiens et étrangers seront présents."
+def get_editors_count_global(lang="fr"):
+    text = "Plus de 200 éditeurs tunisiens et étrangers seront présents."
+    return translate_any(text, lang)
 
 # =========================================
 # --- Réponses DÉTAILLÉES (LISTE STRUCTURÉE POUR FRONT-END)
 # =========================================
-def get_programme_by_date_detailed(date_str):
-    brief = get_programme_by_date_global(date_str)
+def get_programme_by_date_detailed(date_str, lang="fr"):
     events_foire = list(programmes_foire_2023.find({"date": date_str}))
     events_enfant = list(programmes_enfant_2023.find({"date": date_str}))
     total_events = events_foire + events_enfant
+
     if not total_events:
-        return brief
+        result = {
+            "summary": f"Aucun événement trouvé pour le {date_str}.",
+            "details": []
+        }
+        return translate_any(result, lang)
+
     details = []
     for e in total_events:
         details.append({
@@ -157,9 +251,14 @@ def get_programme_by_date_detailed(date_str):
             "salle": e.get("salle", "Lieu inconnu"),
             "public": "👶 Enfants" if e in events_enfant else "🧑‍🦰 Tous publics"
         })
-    return {"summary": brief, "details": details}
 
-def get_programme_date_range_detailed():
+    result = {
+        "summary": f"📅 Événements du {date_str}",
+        "details": details
+    }
+    return translate_any(result, lang)
+
+def get_programme_date_range_detailed(lang="fr"):
     """Retourne résumé + liste complète des événements pour toutes les dates"""
     dates_foire = programmes_foire_2023.distinct("date")
     dates_enfant = programmes_enfant_2023.distinct("date")
@@ -186,10 +285,10 @@ def get_programme_date_range_detailed():
             })
         details.append({"date": date, "events": day_events})
     
-    return {"summary": summary, "details": details}
+    result = {"summary": summary, "details": details}
+    return translate_any(result, lang)
 
-
-def get_all_programmes_detailed():
+def get_all_programmes_detailed(lang="fr"):
     """
     Retourne une version détaillée du programme complet avec toutes les informations.
     """
@@ -222,13 +321,11 @@ def get_all_programmes_detailed():
             })
         details.append({"date": date, "events": day_events})
 
-    return {"summary": summary, "details": details}
+    result = {"summary": summary, "details": details}
+    return translate_any(result, lang)
 
-
-
-
-def get_programme_enfant_general_detailed():
-    brief = get_programme_enfant_general_global()
+def get_programme_enfant_general_detailed(lang="fr"):
+    brief = get_programme_enfant_general_global(lang)
     events = list(programmes_enfant_2023.find())
     if not events:
         return brief
@@ -240,10 +337,11 @@ def get_programme_enfant_general_detailed():
             "titre": e.get("titre"),
             "salle": e.get("salle")
         })
-    return {"summary": brief, "details": details}
+    result = {"summary": brief, "details": details}
+    return translate_any(result, lang)
 
-def get_event_locations_detailed():
-    return {
+def get_event_locations_detailed(lang="fr"):
+    result = {
         "summary": get_event_locations_global(),
         "details": [
             {"lieu": "Salle Dejla et Forat"},
@@ -252,17 +350,20 @@ def get_event_locations_detailed():
             {"lieu": "Convention du Ministère de la Culture"}
         ]
     }
+    return translate_any(result, lang)
 
-def get_event_hours_detailed():
-    brief = get_event_hours_global()
-    return {
+
+def get_event_hours_detailed(lang="fr"):
+    brief = get_event_hours_global(lang)
+    result = {
         "summary": brief,
         "details": [
             {"info": "Certaines activités spéciales peuvent se prolonger après 18h, notamment les cérémonies d’ouverture et de clôture."}
         ]
     }
+    return translate_any(result, lang)
 
-def get_event_price_detailed(event_name=None):
+def get_event_price_detailed(event_name=None, lang="fr"):
     """
     Retourne une réponse détaillée concernant le prix d'entrée.
     """
@@ -275,14 +376,15 @@ def get_event_price_detailed(event_name=None):
                     "Ce tarif inclut le matériel de base fourni sur place.")
     
     # Réponse générale détaillée
-    return ("Les tarifs d’entrée sont organisés en plusieurs catégories :\n"
+    result = ("Les tarifs d’entrée sont organisés en plusieurs catégories :\n"
             "- Adulte : 10 TND\n"
             "- Enfant : 5 TND\n"
             "- Étudiant : 7 TND\n"
             "Les billets peuvent être achetés directement à la Maison de la Foire ou via notre site officiel. "
             "Certains événements spéciaux peuvent avoir des tarifs différents (exemple : concerts ou ateliers).")
+    return translate_any(result, lang)
 
-def get_editors_count_detailed():
+def get_editors_count_detailed(lang="fr"):
     """
     Retourne un résumé global du nombre d'éditeurs,
     avec une liste d'exemples concrets.
@@ -309,14 +411,14 @@ def get_editors_count_detailed():
         {"exemples": exemples[:5]}  # on limite à 5 exemples pour la réponse détaillée
     ]
 
-    return {
+    result = {
         "summary": brief,
         "details": details_list
     }
+    return translate_any(result, lang)
 
-
-def get_event_duration_detailed():
-    return {
+def get_event_duration_detailed(lang="fr"):
+    result = {
         "summary": "⏱️ Durée moyenne des événements",
         "details": [
             {"info": "30 minutes pour les présentations rapides"},
@@ -324,38 +426,39 @@ def get_event_duration_detailed():
             {"info": "2 heures pour les grandes cérémonies et hommages"}
         ]
     }
+    return translate_any(result, lang)
 
-def get_editors_countries_of_origin():
+def get_editors_countries_of_origin(lang="fr"):
     countries = [
         "Tunisie", "Égypte", "Liban", "Iraq", "Iran", "Émirats Arabes Unis", "Syrie",
         "Koweït", "Jordanie", "Soudan", "Irlande", "Royaume d’Arabie Saoudite", "Algérie",
         "Palestine", "Mauritanie", "Maroc", "Yémen", "Russie", "Hongrie", "Amman",
         "Libye", "Sénégal", "Suède"
     ]
-    return {
+    result = {
         "summary": "🌍 Origine des éditeurs",
         "details": [{"pays": c} for c in countries]
     }
-
+    return translate_any(result, lang)
 # --- Cas spécifique 28 avril
 programme_28_avril = [
     {"titre": "Journée d'ouverture officielle de Maison de Foire", "heure": "11:00 - 13:00", "salle": "Théâtre de Shargiia", "Accés" : "Resevée pour les invités "},
     {"titre": "Cérémonie d'hommage et remise des prix", "heure": "17:00 - 18:30", "salle": "Maison de Sagesse - Carthage", "Accés" : "Resevée pour les invités "},
     {"titre": "Session pour commémorer les livres prestigieux", "heure": "14:00 - 16:00", "directeur" : "Hbib ben Salah ", "salle": "Salle de Congrès Culturelles", "Accés" : "Resevée pour les invités "},
-    {"titre": "Session d’éloge à la mémoire de Bechir ben Salama", "heure": "15:00 - 16:30", "directeur" : "Mohammed el May", "salle": "Salle de Dejla et Forat", "Accés" : "Resevée pour les invités "},
+    {"titre": "Session d’éloge à la mémoire de Bechir ben Salama", "heure": "15:00 - 16:30", "directeur" : "Mohammed el May", "salle": "Salle de Dejla et Forat", "Accés" : "Resevée pour les invités "}
 ]
 
-def get_programme_28_avril():
+def get_programme_28_avril(lang="fr"):
     """
     Retourne un dict contenant :
     - la date de commencement
     - la liste complète des sessions pour le 28 avril
     """
-    return {
+    result = {
         "date": "28 Avril 2023",
         "sessions": programme_28_avril
     }
-
+    return translate_any(result, lang)
 
 programme_04_mai =[
     
@@ -368,44 +471,44 @@ programme_04_mai =[
  {"titre" : "Livres des Villes", "heure" : "14:00 à 16:00", "directeur" : "Hbib Ben Salha", "salle" : "Convention du Ministère de la Culture", "Accés": "Ouvert au public "},  
  {"titre" : "Les Communiqués d'Institution Supérieure pour la Musique (en partenariat avec L'institution)", "heure" : "", "directeur" : "L'Institution Supérieure pour la Musique", "salle" : "Convention du Ministère de la Culture", "Accés": "Ouvert au public "},  
  {"titre" : "Interview avec L'Ecrivain 'Awadh Shaher' (Invité Spéciale du Royaume Arabi Saoudite) sur son tout Noveau Œuvre 'Conte du Desert'", "heure" : "17:00 à 18:30", "directeur" : "Omar Hfayedh", "salle" : "Salle de Baghdad", "Accés": "Ouvert au public "},
- {"titre" : "Ecritures de La Bourterie", "heure" : "17:00 à 18:30", "directeur" : "Rajaa el Fariq", "salle" : "Dejla et Forat", "Accés": "Resevée pour les invités "}, 
+ {"titre" : "Ecritures de La Bourterie", "heure" : "17:00 à 18:30", "directeur" : "Rajaa el Fariq", "salle" : "Dejla et Forat", "Accés": "Resevée pour les invités "} 
 ]
 
-def get_programme_04_mai():
+def get_programme_04_mai(lang="fr"):
     """
     Retourne un dict contenant :
     - la date de commencement
     - la liste complète des sessions pour le 04 mai
     """
-    return {
+    result = {
         "date": "04 Mai 2023",
         "sessions": programme_04_mai
     }
-
+    return translate_any(result, lang)
+    
 
 programme_07_mai =[
     
- {"titre" : "Journée Culturelle Italienne", "heure" :"11:00 - 13:00", "directeur" : "Ridha Kochtbane", "salle" : "Salle de Convention de la Ministere de Culture", "Accés" : "Resevée pour les invités "},
+ {"titre" : "Journée Culturelle Italienne", "heure" :"11:00 à 13:00", "directeur" : "Ridha Kochtbane", "salle" : "Convention du Ministère de la Culture", "Accés" : "Resevée pour les invités "},
  {"titre" : "Papiers de la Poésie Oublié (en partenariat avec la Laboratoire Intersignes)" , "heure" :"11:00 - 13:00", "directeur" : "Hind Soudani", "salle": "Salle de Dejla et Forat", "Accés" : "Resevée pour les invités "},
  {"titre" : "Les Chefs-d'œuvre  du Mannouba", "heure" : "13:00 à 15:00", "directeur" : "Ali Youmi", "salle" : "Salle de Baghdad", "Accés" : "Resevée pour les invités "},
  {"titre" : "Les aspects sérieux de L'écriture (en partenariat avec la Maison nationale des livres , Equipe de programme 'Les oreilles lisent') ", "heure" :"14:00 à 16:00", "directeur" : "Souhail Esshamil", "salle" : "Salle de Convention de la Minstere de Culture", "Accés": "Resevée pour les invités "},   
- {"titre" : "Lectures Poétiques ", "heure" : "15:30 à 17:00", "directeur" : "Bouraaoui Barouun", "salle" : "Salle de Baghdad", "Accés": "Resevée pour les invités "},   
+ {"titre" : "Lectures Poétiques ", "heure" : "15:30 à 17:00", "directeur" : "Bouraaoui Barouun", "salle" : "Salle de Baghdad", "Accés": "Resevée pour les invités "}   
 ]
 
 
-def get_programme_07_mai():
+def get_programme_07_mai(lang="fr"):
     print("[DEBUG] ✅ Fonction get_programme_07_mai() appelée.")
     """
     Retourne un dict contenant :
     - la date de conclusion
     - la liste complète des sessions pour le 07 mai
     """
-    return {
+    result = {
         "date": "07 mai 2023",
         "sessions": programme_07_mai
     }
-
-
+    return translate_any(result, lang)
 
 # =========================================
 # --- WRAPPER CHAT-FRIENDLY
@@ -454,7 +557,7 @@ def get_programme_chat_friendly(intent, response_type="brief", max_lines=10, max
 # Export public
 # =========================================
 __all__ = [
-   "programmes_foire_2023", "programmes_enfant_2023", "get_programme_28_avril", "get_programme_04_mai", "get_programme_07_mai",
+   "programmes_foire_2023", "programmes_enfant_2023", "get_programme_28_avril","get_programme_04_mai", "get_programme_07_mai",
    "get_programme_duration_global", "get_programme_by_date_global", "get_programme_enfant_general_global",
    "get_all_programme_combined_dates_global", "get_foire_end_date_global", "get_foire_start_date_global",
    "get_programme_date_range", "get_event_locations_global", "get_event_hours_global", "get_event_price_global",    "get_editors_count_global","get_event_locations_detailed", "get_event_hours_detailed", "get_programme_enfant_general_detailed", 
