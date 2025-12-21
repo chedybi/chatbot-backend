@@ -6,8 +6,37 @@ from pymongo import MongoClient  # type: ignore
 from dotenv import load_dotenv  # type: ignore
 from datetime import datetime
 from questions import get_bot_response  # fallback si besoin
-from logic.programmes import get_editors_count_detailed
-from recommendation import get_recommendations
+
+# =========================================================
+# 🌍 MULTI-LANGUE (i18n)
+# =========================================================
+
+SUPPORTED_LANGS = ["fr", "en", "de", "ar", "ja", "zh"]
+
+
+I18N = {
+    "no_info": {
+        "fr": "Aucune information disponible pour cette question.",
+        "en": "No information available for this question.",
+        "de": "Keine Informationen zu dieser Frage verfügbar.",
+        "ar": "لا توجد معلومات متاحة لهذا السؤال.",
+        "ja": "この質問に関する情報はありません。",
+        "zh": "暂无关于此问题的信息。"
+    },
+    "intro_narrative_programme": {
+        "fr": "📅 Le programme du {date} propose {n} moment(s) fort(s).",
+        "en": "📅 The program for {date} includes {n} key event(s).",
+        "de": "📅 Das Programm vom {date} umfasst {n} Höhepunkt(e).",
+        "ar": "📅 برنامج يوم {date} يتضمن {n} فعالية.",
+        "ja": "📅 {date} のプログラムには {n} 件のイベントがあります。",
+        "zh": "📅 {date} 的活动安排包含 {n} 项活动。"
+    }
+}
+
+def tr(key: str, lang: str = "fr", **kwargs) -> str:
+    lang = lang if lang in SUPPORTED_LANGS else "fr"
+    text = I18N.get(key, {}).get(lang, I18N.get(key, {}).get("fr", ""))
+    return text.format(**kwargs)
 
 # -------------------------
 # Chargement variables d'environnement
@@ -79,7 +108,7 @@ def anecdote_aleatoire(theme="general"):
     return random.choice(recommendations.get(theme, recommendations["general"]))
 
 
-def _format_date(date_str: str) -> str:
+def format_date(date_str: str) -> str:
     """Formate une date brute en version lisible (ex: 28 avril 2023)."""
     if not date_str or str(date_str).lower() in ["none", "null", ""]:
         return "le 28 Avril"
@@ -91,7 +120,7 @@ def _format_date(date_str: str) -> str:
 
 
 def intro_narrative_programme(date=None, n_events=0, question=None):
-    date_fmt = _format_date(date)
+    date_fmt = format_date(date)
     if question and any(word in question.lower() for word in ["commence", "début"]):
         return (
             f"🚀 Bonjour cher visiteur, la foire débute officiellement le {date_fmt}, "
@@ -133,7 +162,7 @@ def format_events(events: list, date: str = None, show_description: bool = True)
     """Formate les sessions en markdown structuré."""
     lines = []
     if date:
-        lines.append(f"📅 **Programme du {_format_date(date)}**\n")
+        lines.append(f"📅 **Programme du {format_date(date)}**\n")
 
     for idx, ev in enumerate(events, start=1):
         titre = str(ev.get("titre") or ev.get("nom") or "Sans titre")
@@ -163,7 +192,8 @@ def generer_storytelling(
     date="2023-04-28",
     response_type="detailed",
     question=None,
-    include_children=False
+    include_children=False,
+    lang="fr"
 ):
     """
     Génère une réponse narrative (storytelling) à partir :
@@ -172,69 +202,35 @@ def generer_storytelling(
     - inclut des recommandations personnalisées selon la question
     """
 
-    sessions_list = []
+    
 
     # --- 1️⃣ Normalisation du format ---
-    if isinstance(sessions, dict):
-        if "details" in sessions and isinstance(sessions["details"], list):
-            sessions_list = sessions["details"]
-        elif "sessions" in sessions:
-            sessions_list = sessions["sessions"]
-        else:
-            sessions_list = [sessions]
-        date = sessions.get("date", date)
-
-    elif isinstance(sessions, list):
+    sessions_list = []
+    if isinstance(sessions, list):
         sessions_list = sessions
 
-    elif db is not None and programmes is not None:
-        query = {"date": date}
-        sessions_list = list(programmes.find(query))
-        if include_children and programmes_enfant:
-            sessions_list += list(programmes_enfant.find(query))
-
-    # --- 2️⃣ Validation ---
-    sessions_list = [s for s in sessions_list if isinstance(s, dict)]
     n_events = len(sessions_list)
 
     if n_events == 0:
-        # 🧩 Ajout fallback avec get_bot_response et get_recommendations
-        fallback_text = get_bot_response(question) if question else ""
-        rec_text = ""
-        try:
-            recs = get_recommendations(question or "")
-            if recs:
-                rec_text = "\n\n💡 Recommandation : " + ", ".join(recs)
-        except Exception as e:
-            rec_text = f"\n⚠️ (Erreur recommandation : {e})"
+        return normalize_story(
+            tr("no_info", lang),
+            tr("no_info", lang)
+        )
 
-        return {
-            "details": (
-                f"❌ Aucun événement trouvé pour cette date.\n\n"
-                f"{fallback_text}\n"
-                f"{rec_text}\n\n"
-                "Vous pouvez poser une autre question ou consulter le programme complet."
-            )
-        }
+    intro = tr(
+        "intro_narrative_programme",
+        lang,
+        date=format_date(date),
+        n=n_events
+    )
 
-    # --- 3️⃣ Génération du storytelling ---
-    intro = intro_narrative_programme(date, n_events, question)
-    details = format_events(sessions_list, date=date, show_description=(response_type == "detailed"))
+    details = "\n".join(
+        f"- {s.get('titre', '—')}" for s in sessions_list
+    )
 
-    # --- 4️⃣ Ajout dynamique de recommandations ---
-    recommendation_text = ""
-    try:
-        recs = get_recommendations(question or "")
-        if recs:
-            recommendation_text = "\n\n💡 **Suggestions associées :**\n- " + "\n- ".join(recs)
-    except Exception as e:
-        print(f"⚠️ Erreur lors de la récupération des recommandations : {e}")
-
-    # --- 5️⃣ Conclusion dynamique ---
     conclusion = anecdote_aleatoire("programmes")
 
-    final_text = f"{intro}\n\n{details}\n\n{recommendation_text}\n\n{conclusion}"
-
+    final_text = f"{intro}\n\n{details}\n\n{conclusion}"
     return normalize_story(intro, final_text)
 
 
